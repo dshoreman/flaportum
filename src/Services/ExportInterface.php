@@ -2,7 +2,7 @@
 
 interface ExportInterface
 {
-    public function getServiceName();
+    public function getName();
 
     public function init(array $data);
 

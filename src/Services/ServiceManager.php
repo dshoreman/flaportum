@@ -47,7 +47,7 @@ class ServiceManager
                     continue;
                 }
 
-                $this->services['export'][$class] = $service->getServiceName();
+                $this->services['export'][$class] = $service->getName();
             }
         }
     }

@@ -1,11 +1,16 @@
 <?php namespace Flaportum\Services\OctoberPlugin;
 
+use Flaportum\Services\ExportBase;
 use Flaportum\Services\ExportInterface;
 use PHPHtmlParser\Dom;
 
-class DomExporter implements ExportInterface
+class DomExporter extends ExportBase implements ExportInterface
 {
-    protected $baseUrl;
+    protected $name = 'OctoberCMS Plugin Forums (web scrape)';
+
+    protected $attributes = [
+        'code' => 'Plugin code (e.g. "rainlab-blog"): ',
+    ];
 
     protected $pages = [];
     public $pageCount = 0;
@@ -15,25 +20,10 @@ class DomExporter implements ExportInterface
 
     public $postCount = 0;
 
-    public function getServiceName()
-    {
-        return 'OctoberCMS Plugin Forums (web scrape)';
-    }
-
-    public function getRequirements()
-    {
-        return [
-            'code' => 'Plugin code (e.g. "rainlab-blog"): ',
-        ];
-    }
-
     public function init(array $data)
     {
-        foreach (array_keys($this->getRequirements()) as $key) {
-            if (!array_key_exists($key, $data)) {
-                throw new Exception('Missing key "'.$key.'" required for this service.');
-            }
-        }
+        parent::init($data);
+
 
         $this->baseUrl = 'https://octobercms.com/plugin/support/'.$data['code'];
     }
