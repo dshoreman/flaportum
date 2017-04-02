@@ -1,10 +1,11 @@
 {
     "require": {
-        "paquettg/php-html-parser": "^1.7"
+        "paquettg/php-html-parser": "^1.7",
+        "symfony/console": "^3.2"
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "Flaportum\\": "src/"
         }
     }
 }

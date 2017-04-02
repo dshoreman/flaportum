@@ -1,10 +1,11 @@
-<?php namespace App\October;
+<?php namespace Flaportum\Services\OctoberPlugin;
 
+use Flaportum\Services\ExportInterface;
 use PHPHtmlParser\Dom;
 
-class Support
+class DomExporter implements ExportInterface
 {
-    protected $base;
+    protected $baseUrl;
 
     protected $pages = [];
     public $pageCount = 0;
@@ -14,15 +15,33 @@ class Support
 
     public $postCount = 0;
 
-    public function __construct($pluginCode)
+    public function getServiceName()
     {
-        $this->base = 'https://octobercms.com/plugin/support/'.$pluginCode;
-
-        $this->loadPages();
+        return 'OctoberCMS Plugin Forums (web scrape)';
     }
 
-    public function export()
+    public function getRequirements()
     {
+        return [
+            'code' => 'Plugin code (e.g. "rainlab-blog"): ',
+        ];
+    }
+
+    public function init(array $data)
+    {
+        foreach (array_keys($this->getRequirements()) as $key) {
+            if (!array_key_exists($key, $data)) {
+                throw new Exception('Missing key "'.$key.'" required for this service.');
+            }
+        }
+
+        $this->baseUrl = 'https://octobercms.com/plugin/support/'.$data['code'];
+    }
+
+    public function run()
+    {
+        $this->loadPages();
+
         foreach ($this->pages as $page) {
             $this->loadTopics($page);
         }
@@ -34,7 +53,7 @@ class Support
 
     protected function loadPages()
     {
-        $pagination = (new Dom)->load($this->base)->find('ul.pagination a[href*=page]');
+        $pagination = (new Dom)->load($this->baseUrl)->find('ul.pagination a[href*=page]');
 
         foreach ($pagination as $link) {
             if (is_numeric($link->innerHtml())) {
@@ -67,7 +86,7 @@ class Support
 
     protected function loadPosts($slug)
     {
-        $posts = (new Dom)->load($this->base.'/'.$slug)->find('.forum-posts .forum-post');
+        $posts = (new Dom)->load($this->baseUrl.'/'.$slug)->find('.forum-posts .forum-post');
 
         foreach ($posts as $post) {
             $this->topics[$slug]['posts'][] = [
