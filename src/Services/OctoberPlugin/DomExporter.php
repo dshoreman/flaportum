@@ -1,5 +1,6 @@
 <?php namespace Flaportum\Services\OctoberPlugin;
 
+use Flaportum\Topic;
 use Flaportum\Services\ExportBase;
 use Flaportum\Services\ExportInterface;
 use PHPHtmlParser\Dom;
@@ -35,10 +36,6 @@ class DomExporter extends ExportBase implements ExportInterface
         foreach ($this->pages as $page) {
             $this->loadTopics($page);
         }
-
-        foreach ($this->topics as $slug => $data) {
-            $this->loadPosts($slug);
-        }
     }
 
     protected function loadPages()
@@ -58,26 +55,41 @@ class DomExporter extends ExportBase implements ExportInterface
     {
         $topics = (new Dom)->load($page)->find('tr.forum-topic');
 
-        foreach ($topics as $topic) {
-            $title = $topic->find('h5 a')[0];
-            $link = $title->getAttribute('href');
-            $linkParts = explode('/', $link);
-            $slug = end($linkParts);
+        foreach ($topics as $row) {
+            $topic = $this->prepareTopic($row);
 
-            $this->topics[$slug] = [
-                'link' => $link,
-                'title' => $title->innerHtml(),
-                'author' => $topic->find('h5 small a')[0]->innerHtml(),
-                'posts' => [],
-            ];
+            $posts = (new Dom)->load($this->baseUrl.'/'.$topic->slug)->find('.forum-posts .forum-post');
+            $postsArray = $posts->toArray();
+
+            $topic->created_at = $this->getTimestamp($posts[0]);
+            $topic->last_post_at = $this->getTimestamp(end($postsArray));
+
+            $this->loadPosts($topic->slug, $posts);
+
             $this->topicCount++;
         }
     }
 
-    protected function loadPosts($slug)
+    protected function prepareTopic($data)
     {
-        $posts = (new Dom)->load($this->baseUrl.'/'.$slug)->find('.forum-posts .forum-post');
+        $name = $data->find('h5 a')[0];
+        $link = $name->getAttribute('href');
 
+        $topic = new Topic;
+        $topic->title = $name->innerHtml();
+        $topic->slug = substr($link, strrpos($link, '/') + 1);
+        $topic->author = $data->find('h5 small a')[0]->innerHtml();
+
+        return $topic;
+    }
+
+    protected function getTimestamp($post)
+    {
+        return $post->find('.content .metadata time')[0]->getAttribute('datetime');
+    }
+
+    protected function loadPosts($slug, $posts)
+    {
         foreach ($posts as $post) {
             $this->topics[$slug]['posts'][] = [
                 'author' => $post->find('.content > a.author')[0]->innerHtml(),
