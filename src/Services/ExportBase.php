@@ -1,16 +1,32 @@
 <?php namespace Flaportum\Services;
 
+use Flaportum\Core\Cache;
+
 class ExportBase
 {
     protected $baseUrl;
 
     protected $name;
 
+    protected $code;
+
+    protected $cache;
+
     protected $attributes;
+
+    public function __construct()
+    {
+        $this->cache = new Cache($this);
+    }
 
     public function getName()
     {
         return $this->name;
+    }
+
+    public function getCode()
+    {
+        return $this->code;
     }
 
     public function getRequirements()

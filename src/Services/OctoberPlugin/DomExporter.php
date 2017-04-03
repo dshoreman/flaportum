@@ -9,8 +9,10 @@ class DomExporter extends ExportBase implements ExportInterface
 {
     protected $name = 'OctoberCMS Plugin Forums (web scrape)';
 
+    protected $code = 'october-plugin';
+
     protected $attributes = [
-        'code' => 'Plugin code (e.g. "rainlab-blog"): ',
+        'pluginCode' => 'Plugin code (e.g. "rainlab-blog"): ',
     ];
 
     protected $pages = [];
@@ -25,8 +27,9 @@ class DomExporter extends ExportBase implements ExportInterface
     {
         parent::init($data);
 
+        $this->cache->create($data['pluginCode']);
 
-        $this->baseUrl = 'https://octobercms.com/plugin/support/'.$data['code'];
+        $this->baseUrl = 'https://octobercms.com/plugin/support/'.$data['pluginCode'];
     }
 
     public function run()
@@ -63,6 +66,8 @@ class DomExporter extends ExportBase implements ExportInterface
 
             $topic->created_at = $this->getTimestamp($posts[0]);
             $topic->last_post_at = $this->getTimestamp(end($postsArray));
+
+            $this->cache->putTopic($topic);
 
             $this->loadPosts($topic->slug, $posts);
 
