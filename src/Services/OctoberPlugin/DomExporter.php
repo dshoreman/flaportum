@@ -1,5 +1,6 @@
 <?php namespace Flaportum\Services\OctoberPlugin;
 
+use Flaportum\Post;
 use Flaportum\Topic;
 use Flaportum\Services\ExportBase;
 use Flaportum\Services\ExportInterface;
@@ -16,9 +17,9 @@ class DomExporter extends ExportBase implements ExportInterface
     ];
 
     protected $pages = [];
+
     public $pageCount = 0;
 
-    protected $topics = [];
     public $topicCount = 0;
 
     public $postCount = 0;
@@ -64,8 +65,8 @@ class DomExporter extends ExportBase implements ExportInterface
             $posts = (new Dom)->load($this->baseUrl.'/'.$topic->slug)->find('.forum-posts .forum-post');
             $postsArray = $posts->toArray();
 
-            $topic->created_at = $this->getTimestamp($posts[0]);
-            $topic->last_post_at = $this->getTimestamp(end($postsArray));
+            $topic->created_at = $this->getCreateTimestamp($posts[0]);
+            $topic->last_post_at = $this->getCreateTimestamp(end($postsArray));
 
             $this->cache->putTopic($topic);
 
@@ -88,19 +89,35 @@ class DomExporter extends ExportBase implements ExportInterface
         return $topic;
     }
 
-    protected function getTimestamp($post)
+    protected function loadPosts($slug, $posts)
+    {
+        foreach ($posts as $result) {
+            $post = new Post;
+            $post->id = $result->getAttribute('data-post-id');
+            $post->author = $result->find('.content > a.author')[0]->innerHtml();
+            $post->content = $result->find('.content > .text')[0]->innerHtml();
+            $post->created_at = $this->getCreateTimestamp($result);
+            $post->updated_at = $this->getEditTimestamp($result);
+
+            $this->postCount++;
+        }
+    }
+
+    protected function getCreateTimestamp($post)
     {
         return $post->find('.content .metadata time')[0]->getAttribute('datetime');
     }
 
-    protected function loadPosts($slug, $posts)
+    protected function getEditTimestamp($post)
     {
-        foreach ($posts as $post) {
-            $this->topics[$slug]['posts'][] = [
-                'author' => $post->find('.content > a.author')[0]->innerHtml(),
-                'content' => $post->find('.content > .text')[0]->innerHtml(),
-            ];
-            $this->postCount++;
+        $mutedLines = $post->find('.content > .text small.text-muted');
+
+        foreach ($mutedLines as $line) {
+            if (trim($line->text) != 'Last updated') {
+                continue;
+            }
+
+            return $line->find('time')[0]->getAttribute('datetime');
         }
     }
 }
