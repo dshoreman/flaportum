@@ -17,11 +17,19 @@ class Cache
 
     public function create($dir)
     {
-        $this->exportRoot = $this->cacheRoot.'/'.$this->source->getCode().'/'.$dir;
+        $path = $cleanpath = $this->cacheRoot.'/'.$this->source->getCode().'/'.$dir;
 
-        if (!mkdir($this->exportRoot, 0755, true)) {
-            throw new \Exception("Failed to create cache directory {$this->exportRoot}");
+        while (is_dir($path)) {
+            $counter = !isset($counter) ? 2 : $counter + 1;
+
+            $path = $cleanpath.'__'.$counter;
         }
+
+        if (!mkdir($path, 0755, true)) {
+            throw new \Exception("Failed to create cache directory {$path}");
+        }
+
+        $this->exportRoot = $path;
     }
 
     public function putTopic($topic)
