@@ -29,18 +29,45 @@ class Cache
             throw new \Exception("Failed to create cache directory {$path}");
         }
 
+        $topicPath = $this->getPath('topics', null, $path);
+        $postPath = $this->getPath('posts', null, $path);
+
+        if (!mkdir($topicPath, 0755)) {
+            throw new \Exception("Failed to create Topic cache directory {$topicPath}");
+        }
+
+        if (!mkdir($postPath, 0755)) {
+            throw new \Exception("Failed to create Post cache directory {$postPath}");
+        }
+
         $this->exportRoot = $path;
+    }
+
+    protected function getPath($cache = 'root', $item = null, $root = null)
+    {
+        $path = $root ?: $this->exportRoot;
+
+        switch ($cache) {
+            case 'topics': $path .= '/topics'; break;
+            case 'posts': $path .= '/posts'; break;
+        }
+
+        if ($item) {
+            $path .= '/'.$item;
+        }
+
+        return $path;
     }
 
     public function putTopic($topic)
     {
-        $path = $this->exportRoot.'/'.$this->getTopicCachename($topic, false);
+        $path = $this->getPath('posts', $this->getTopicCachename($topic, false));
 
-        if (!mkdir($path)) {
+        if (!is_dir($path) && !mkdir($path)) {
             throw new \Exception("Failed to create topic cache at {$path}");
         }
 
-        $file = $this->exportRoot.'/'.$this->getTopicCachename($topic).'.txt';
+        $file = $this->getPath('topics', $this->getTopicCachename($topic).'.txt');
 
         if (false === file_put_contents($file, serialize($topic))) {
             throw new \Exception("Failed to write topic data file at {$file}");
@@ -52,5 +79,20 @@ class Cache
         return !$includeSlug
             ? $topic->created_at
             : $topic->created_at.'__'.$topic->slug;
+    }
+
+    public function putPost($post, $topic)
+    {
+        $path = $this->getPath('posts', $this->getTopicCachename($topic, false));
+
+        if (!is_dir($path) && !mkdir($path)) {
+            throw new \Exception("Post cache does not exist and could not be created.");
+        }
+
+        $file = $path.'/'.$post->id.'.txt';
+
+        if (false === file_put_contents($file, serialize($post))) {
+            throw new \Exception("Failed to write post data file at {$file}");
+        }
     }
 }

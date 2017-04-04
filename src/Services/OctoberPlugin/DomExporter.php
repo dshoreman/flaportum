@@ -70,7 +70,7 @@ class DomExporter extends ExportBase implements ExportInterface
 
             $this->cache->putTopic($topic);
 
-            $this->loadPosts($topic->slug, $posts);
+            $this->loadPosts($posts, $topic);
 
             $this->topicCount++;
         }
@@ -89,7 +89,7 @@ class DomExporter extends ExportBase implements ExportInterface
         return $topic;
     }
 
-    protected function loadPosts($slug, $posts)
+    protected function loadPosts($posts, $topic)
     {
         foreach ($posts as $result) {
             $post = new Post;
@@ -98,6 +98,8 @@ class DomExporter extends ExportBase implements ExportInterface
             $post->content = $result->find('.content > .text')[0]->innerHtml();
             $post->created_at = $this->getCreateTimestamp($result);
             $post->updated_at = $this->getEditTimestamp($result);
+
+            $this->cache->putPost($post, $topic);
 
             $this->postCount++;
         }
