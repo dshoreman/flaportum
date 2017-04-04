@@ -49,7 +49,7 @@ class Cache
 
     protected function getTopicCachename($topic, $includeSlug = true)
     {
-        return $includeSlug
+        return !$includeSlug
             ? $topic->created_at
             : $topic->created_at.'__'.$topic->slug;
     }
