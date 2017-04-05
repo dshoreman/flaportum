@@ -31,6 +31,7 @@ class Cache
 
         $topicPath = $this->getPath('topics', null, $path);
         $postPath = $this->getPath('posts', null, $path);
+        $userPath = $this->getPath('users', null, $path);
 
         if (!mkdir($topicPath, 0755)) {
             throw new \Exception("Failed to create Topic cache directory {$topicPath}");
@@ -38,6 +39,10 @@ class Cache
 
         if (!mkdir($postPath, 0755)) {
             throw new \Exception("Failed to create Post cache directory {$postPath}");
+        }
+
+        if (!mkdir($userPath, 0755)) {
+            throw new \Exception("Failed to create User cache directory {$userPath}");
         }
 
         $this->exportRoot = $path;
@@ -50,6 +55,7 @@ class Cache
         switch ($cache) {
             case 'topics': $path .= '/topics'; break;
             case 'posts': $path .= '/posts'; break;
+            case 'users': $path .= '/users'; break;
         }
 
         if ($item) {
@@ -93,6 +99,15 @@ class Cache
 
         if (false === file_put_contents($file, serialize($post))) {
             throw new \Exception("Failed to write post data file at {$file}");
+        }
+    }
+
+    public function putUser($user)
+    {
+        $file = $this->getPath('users', $user->id.'.txt');
+
+        if (false === file_put_contents($file, serialize($user))) {
+            throw new \Exception("Failed to write user data file at {$file}");
         }
     }
 }

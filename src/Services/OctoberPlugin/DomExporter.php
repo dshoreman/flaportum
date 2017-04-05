@@ -2,6 +2,7 @@
 
 use Flaportum\Post;
 use Flaportum\Topic;
+use Flaportum\User;
 use Flaportum\Services\ExportBase;
 use Flaportum\Services\ExportInterface;
 use PHPHtmlParser\Dom;
@@ -17,6 +18,8 @@ class DomExporter extends ExportBase implements ExportInterface
     ];
 
     protected $pages = [];
+
+    protected $users = [];
 
     public $pageCount = 0;
 
@@ -84,7 +87,7 @@ class DomExporter extends ExportBase implements ExportInterface
         $topic = new Topic;
         $topic->title = $name->innerHtml();
         $topic->slug = substr($link, strrpos($link, '/') + 1);
-        $topic->author = $data->find('h5 small a')[0]->innerHtml();
+        $topic->author = $this->getUser($data->find('h5 small a')[0])->id;
 
         return $topic;
     }
@@ -94,7 +97,7 @@ class DomExporter extends ExportBase implements ExportInterface
         foreach ($posts as $result) {
             $post = new Post;
             $post->id = $result->getAttribute('data-post-id');
-            $post->author = $result->find('.content > a.author')[0]->innerHtml();
+            $post->author = $this->getUser($result->find('.content > a.author')[0])->id;
             $post->content = $result->find('.content > .text')[0]->innerHtml();
             $post->created_at = $this->getCreateTimestamp($result);
             $post->updated_at = $this->getEditTimestamp($result);
@@ -121,5 +124,26 @@ class DomExporter extends ExportBase implements ExportInterface
 
             return $line->find('time')[0]->getAttribute('datetime');
         }
+    }
+
+    protected function getUser($link)
+    {
+        $href = $link->getAttribute('href');
+        $slug = substr($href, strrpos($href, '/') + 1);
+
+        if (array_key_exists($slug, $this->users)) {
+            return $this->users[$slug];
+        }
+
+        $info = (new Dom)->load($href)->find('.forum-member-info')[0];
+
+        $user = new User;
+        $user->id = $slug;
+        $user->username = $link->innerHtml();
+        $user->created_at = trim(str_replace('Member since: ', '', $info->find('p')[0]));
+
+        $this->cache->putUser($user),
+
+        return $this->users[$slug] = $user;
     }
 }
