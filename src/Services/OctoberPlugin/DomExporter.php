@@ -62,6 +62,9 @@ class DomExporter extends ExportBase implements ExportInterface
     {
         $topics = (new Dom)->load($page)->find('tr.forum-topic');
 
+        $cur = 1;
+        $all = count($topics);
+
         foreach ($topics as $row) {
             $topic = $this->prepareTopic($row);
 
@@ -71,11 +74,17 @@ class DomExporter extends ExportBase implements ExportInterface
             $topic->created_at = $this->getCreateTimestamp($posts[0]);
             $topic->last_post_at = $this->getCreateTimestamp(end($postsArray));
 
-            $this->cache->putTopic($topic);
+            echo sprintf(
+                "[%s] Caching topic %s of %s: %s".PHP_EOL,
+                $this->cache->putTopic($topic) ? 'PASS' : 'FAIL',
+                $cur, $all,
+                html_entity_decode($topic->title, ENT_QUOTES)
+            );
 
             $this->loadPosts($posts, $topic);
 
             $this->topicCount++;
+            $cur++;
         }
     }
 
@@ -94,6 +103,9 @@ class DomExporter extends ExportBase implements ExportInterface
 
     protected function loadPosts($posts, $topic)
     {
+        $cur = 1;
+        $all = count($posts);
+
         foreach ($posts as $result) {
             $post = new Post;
             $post->id = $result->getAttribute('data-post-id');
@@ -102,9 +114,14 @@ class DomExporter extends ExportBase implements ExportInterface
             $post->created_at = $this->getCreateTimestamp($result);
             $post->updated_at = $this->getEditTimestamp($result);
 
-            $this->cache->putPost($post, $topic);
+            echo sprintf(
+                "[%s] Caching post %s of %s".PHP_EOL,
+                $this->cache->putPost($post, $topic) ? 'PASS' : 'FAIL',
+                $cur, $all
+            );
 
             $this->postCount++;
+            $cur++;
         }
     }
 
@@ -142,7 +159,11 @@ class DomExporter extends ExportBase implements ExportInterface
         $user->username = $link->innerHtml();
         $user->created_at = trim(str_replace('Member since: ', '', $info->find('p')[0]));
 
-        $this->cache->putUser($user),
+        echo sprintf(
+            "[%s] Caching new user: %s".PHP_EOL,
+            $this->cache->putUser($user) ? 'PASS' : 'FAIL',
+            $user->username
+        );
 
         return $this->users[$slug] = $user;
     }

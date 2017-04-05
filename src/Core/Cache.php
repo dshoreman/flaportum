@@ -75,9 +75,7 @@ class Cache
 
         $file = $this->getPath('topics', $this->getTopicCachename($topic).'.txt');
 
-        if (false === file_put_contents($file, serialize($topic))) {
-            throw new \Exception("Failed to write topic data file at {$file}");
-        }
+        return false !== file_put_contents($file, serialize($topic));
     }
 
     protected function getTopicCachename($topic, $includeSlug = true)
@@ -97,17 +95,13 @@ class Cache
 
         $file = $path.'/'.$post->id.'.txt';
 
-        if (false === file_put_contents($file, serialize($post))) {
-            throw new \Exception("Failed to write post data file at {$file}");
-        }
+        return false !== file_put_contents($file, serialize($post));
     }
 
     public function putUser($user)
     {
         $file = $this->getPath('users', $user->id.'.txt');
 
-        if (false === file_put_contents($file, serialize($user))) {
-            throw new \Exception("Failed to write user data file at {$file}");
-        }
+        return false !== file_put_contents($file, serialize($user));
     }
 }
