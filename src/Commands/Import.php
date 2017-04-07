@@ -34,20 +34,33 @@ class Import extends Command
 
         $this->helper = $this->getHelper('question');
 
-        $this->api = new Flarum('http://localhost', [
-            'token' => 'Token wicwqnvRqmGNp4LBAMHWp3nKRbh19dsCbfiCgp7N; userId=1'
-        ]);
-
-        $forum = $this->api->forum()->request();
-
-        $output->writeLn("We found a forum called '{$forum->title}' at that link!");
-
-        if (!$this->helper->ask($input, $output, new ConfirmationQuestion("Is that right? [y/N] ", false))) {
-            $output->writeLn("Aborting.");
-            return;
-        }
+        $forum = $this->chooseHost($input, $output);
 
         $tag = $this->chooseTag($input, $output, $forum->tags);
+    }
+
+    protected function chooseHost($input, $output)
+    {
+        while (!isset($forum)) {
+            $host = $this->helper->ask($input, $output, new Question(
+                "Enter the URL to import into, or leave blank for localhost: ",
+                'http://localhost'
+            ));
+
+            $this->api = new Flarum($host, [
+                'token' => 'Token wicwqnvRqmGNp4LBAMHWp3nKRbh19dsCbfiCgp7N; userId=1'
+            ]);
+
+            $forum = $this->api->forum()->request();
+
+            $output->writeLn("We found a forum called '{$forum->title}' at that link!");
+
+            if ($this->helper->ask($input, $output, new ConfirmationQuestion("Is that right? [y/N] ", false))) {
+                return $forum;
+            }
+
+            unset($forum);
+        }
     }
 
     protected function chooseTag($input, $output, $tagdata)
