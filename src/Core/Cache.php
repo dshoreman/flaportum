@@ -19,6 +19,8 @@ class Cache
      */
     protected $source;
 
+    protected $users;
+
     public function __construct($source)
     {
         $this->cacheRoot = __DIR__.'/../../cache';
@@ -37,6 +39,19 @@ class Cache
         }
 
         return  $caches;
+    }
+
+    public function open($dir)
+    {
+        $path = $this->getPath('root', $dir, true);
+
+        if (!is_dir($path)) {
+            throw new \Exception("Cache not found!");
+        }
+
+        $this->cachePath = $path;
+
+        return $this;
     }
 
     public function create($dir)
@@ -121,6 +136,17 @@ class Cache
         $file = $path.'/'.$post->id.'.txt';
 
         return false !== file_put_contents($file, serialize($post));
+    }
+
+    public function getUsers()
+    {
+        if (!$this->users) {
+            foreach ((new Finder)->files()->in($this->getPath('users')) as $file) {
+                $this->users[] = unserialize($file->getContents());
+            }
+        }
+
+        return $this->users;
     }
 
     public function putUser($user)

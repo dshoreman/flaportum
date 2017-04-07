@@ -3,6 +3,8 @@
 use Flagrow\Flarum\Api\Flarum;
 use Flaportum\Core\Cache;
 use Flaportum\Services\ServiceManager;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Command\Command;
@@ -16,9 +18,15 @@ class Import extends Command
 {
     protected $api;
 
+    protected $cache;
+
     protected $config;
 
     protected $helper;
+
+    protected $users;
+
+    protected $userMap;
 
     protected function configure()
     {
@@ -43,11 +51,13 @@ class Import extends Command
 
         $this->helper = $this->getHelper('question');
 
-        $source = $this->chooseCache($input, $output);
+        $this->cache = $this->chooseCache($input, $output);
 
         $forum = $this->chooseHost($input, $output);
 
         $tag = $this->chooseTag($input, $output, $forum->tags);
+
+        $this->processUsers($input, $output);
     }
 
     protected function chooseCache($input, $output)
@@ -58,12 +68,14 @@ class Import extends Command
             0
         ));
 
-        $cache = $this->helper->ask($input, $output, new ChoiceQuestion(
+        $cache = new Cache(new $service);
+
+        $cacheDir = $this->helper->ask($input, $output, new ChoiceQuestion(
             "Now select the forum dump to import: ",
-            (new Cache(new $service))->list()
+            $cache->list()
         ));
 
-        $output->writeLn("You selected: {$cache}");
+        return $cache->open($cacheDir);
     }
 
     protected function chooseHost($input, $output)
@@ -140,5 +152,73 @@ class Import extends Command
                 ],
             ],
         ])->request();
+    }
+
+    protected function processUsers($input, $output)
+    {
+        $this->users = $this->api->users()->request();
+
+        foreach ($this->cache->getUsers() as $profile) {
+            $user = $this->createUser($input, $output, $profile);
+
+            if (!$this->users->collect()->has($user->id)) {
+                $this->users->collect()->put($user->id, $user);
+            }
+
+            $this->userMap[$profile->id] = $user->id;
+        }
+    }
+
+    protected function createUser($input, $output, $user, $increment = 0)
+    {
+        $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
+
+        try {
+            return $this->api->users()->post([
+                'data' => [
+                    'attributes' => [
+                        'username' => $username,
+                        'email' => "dummy+{$username}@octoshop.co",
+                        'password' => Str::random(20),
+                        'isActivated' => true,
+                    ],
+                ],
+            ])->request();
+        } catch (ClientException $e) {
+            $res = $e->getResponse();
+            $body = json_decode($res->getBody());
+
+            if ($res->getStatusCode() != 422) {
+                throw $e;
+            }
+
+            foreach ($body->errors as $error) {
+                if ($error->detail != 'The email has already been taken.'
+                 && $error->detail != 'The username has already been taken.') {
+                    continue;
+                }
+
+                $answer = $this->helper->ask($input, $output, new ChoiceQuestion(
+                    sprintf("%s What should we do? ", $error->detail),
+                    ['c' => "Continue using the existing user ({$username})", 'n' => 'Make a new, suffixed user'],
+                    'n'
+                ));
+
+                if ($answer == 'n') {
+                    // Reset the API first, or we get endpoint recursion (/api/users/users)
+                    $this->api->fluent();
+
+                    return $this->createUser($input, $output, $user, $increment + 1);
+                } else {
+                    $userId = $this->users->collect()->search(function ($user, $id) use ($username) {
+                        return $user->username == $username;
+                    });
+
+                    return $this->users->collect()->get($userId);
+                }
+
+                break;
+            }
+        }
     }
 }

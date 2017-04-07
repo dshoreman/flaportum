@@ -79,12 +79,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/dshoreman/flarum-api-client.git",
-                "reference": "bcf1e87f3749bb93bd08bc5224214011cdd588cb"
+                "reference": "f6d78e660776730439c6ff396fc4f4efb308b3ce"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dshoreman/flarum-api-client/zipball/bcf1e87f3749bb93bd08bc5224214011cdd588cb",
-                "reference": "bcf1e87f3749bb93bd08bc5224214011cdd588cb",
+                "url": "https://api.github.com/repos/dshoreman/flarum-api-client/zipball/f6d78e660776730439c6ff396fc4f4efb308b3ce",
+                "reference": "f6d78e660776730439c6ff396fc4f4efb308b3ce",
                 "shasum": ""
             },
             "require": {
@@ -132,7 +132,7 @@
                 "issues": "https://github.com/flagrow/flarum-api-client/issues",
                 "source": "https://github.com/flagrow/flarum-api-client"
             },
-            "time": "2017-04-06 22:58:07"
+            "time": "2017-04-07 06:37:36"
         },
         {
             "name": "guzzlehttp/guzzle",
