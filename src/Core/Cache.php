@@ -4,10 +4,19 @@ use Symfony\Component\Finder\Finder;
 
 class Cache
 {
+    /**
+     * Full path to the /cache directory
+     */
     protected $cacheRoot;
 
-    protected $exportRoot;
+    /**
+     * Path to the actual dump directory
+     */
+    protected $cachePath;
 
+    /**
+     * Instance of the source service
+     */
     protected $source;
 
     public function __construct($source)
@@ -21,7 +30,7 @@ class Cache
     {
         $caches = [];
 
-        $path = $this->getPath('root', $this->source->getCode(), $this->cacheRoot);
+        $path = $this->getPath('root', null, true);
 
         foreach ((new Finder)->directories()->depth(0)->in($path) as $cache) {
             $caches[] = $cache->getFilename();
@@ -32,7 +41,7 @@ class Cache
 
     public function create($dir)
     {
-        $path = $cleanpath = $this->cacheRoot.'/'.$this->source->getCode().'/'.$dir;
+        $path = $cleanpath = $this->getPath('root', $dir, true);
 
         while (is_dir($path)) {
             $counter = !isset($counter) ? 2 : $counter + 1;
@@ -44,9 +53,11 @@ class Cache
             throw new \Exception("Failed to create cache directory {$path}");
         }
 
-        $topicPath = $this->getPath('topics', null, $path);
-        $postPath = $this->getPath('posts', null, $path);
-        $userPath = $this->getPath('users', null, $path);
+        $this->cachePath = $path;
+
+        $topicPath = $this->getPath('topics', null);
+        $postPath = $this->getPath('posts', null);
+        $userPath = $this->getPath('users', null);
 
         if (!mkdir($topicPath, 0755)) {
             throw new \Exception("Failed to create Topic cache directory {$topicPath}");
@@ -59,18 +70,17 @@ class Cache
         if (!mkdir($userPath, 0755)) {
             throw new \Exception("Failed to create User cache directory {$userPath}");
         }
-
-        $this->exportRoot = $path;
     }
 
-    protected function getPath($cache = 'root', $item = null, $root = null)
+    protected function getPath($cache = 'root', $item = null, $root = false)
     {
-        $path = $root ?: $this->exportRoot;
+        $path = $root ? $this->cacheRoot : $this->cachePath;
 
         switch ($cache) {
             case 'topics': $path .= '/topics'; break;
             case 'posts': $path .= '/posts'; break;
             case 'users': $path .= '/users'; break;
+            case 'root': $path .= '/'.$this->source->getCode(); break;
         }
 
         if ($item) {
