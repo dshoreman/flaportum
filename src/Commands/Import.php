@@ -57,7 +57,9 @@ class Import extends Command
 
         $tag = $this->chooseTag($input, $output, $forum->tags);
 
-        $this->processUsers($input, $output);
+        $this->importUsers($input, $output);
+
+        $this->importDiscussions($input, $output);
     }
 
     protected function chooseCache($input, $output)
@@ -154,7 +156,34 @@ class Import extends Command
         ])->request();
     }
 
-    protected function processUsers($input, $output)
+    protected function importDiscussions($input, $output)
+    {
+        foreach ($this->cache->getTopics() as $topic) {
+            for ($i = 0; $i < count($topic->posts); $i++) {
+                $post = $this->cache->getPost($topic, $topic->posts[$i]);
+
+                if ($i === 0) {
+                    $topic->content = $post->content;
+
+                    $discussion = $this->createDiscussion($topic);
+                }
+            }
+        }
+    }
+
+    protected function createDiscussion($topic)
+    {
+        return $this->api->discussions()->post([
+            'data' => [
+                'attributes' => [
+                    'title' => $topic->title,
+                    'content' => $topic->content,
+                ],
+            ],
+        ])->request();
+    }
+
+    protected function importUsers($input, $output)
     {
         $this->users = $this->api->users()->request();
 

@@ -105,6 +105,35 @@ class Cache
         return $path;
     }
 
+    public function getTopics()
+    {
+        $topics = [];
+
+        foreach ((new Finder)->files()->in($this->getPath('topics')) as $file) {
+            $topic = unserialize($file->getContents());
+            $posts = (new Finder)->files()->in($this->getPath('posts', $topic->created_at));
+            $topic->posts = [];
+
+            foreach ($posts as $postfile) {
+                $topic->posts[] = $postfile->getBasename('.txt');
+            }
+
+            sort($topic->posts, SORT_NUMERIC);
+
+            $topics[] = $topic;
+        }
+
+        usort($topics, function($a, $b) {
+            if ($a->created_at == $b->created_at) {
+                return 0;
+            }
+
+            return $a->created_at > $b->created_at ? 1: -1;
+        });
+
+        return $topics;
+    }
+
     public function putTopic($topic)
     {
         $path = $this->getPath('posts', $this->getTopicCachename($topic, false));
@@ -123,6 +152,17 @@ class Cache
         return !$includeSlug
             ? $topic->created_at
             : $topic->created_at.'__'.$topic->slug;
+    }
+
+    public function getPost($topic, $postId)
+    {
+        $file = $this->getPath('posts', $topic->created_at)."/{$postId}.txt";
+
+        if (!file_exists($file)) {
+            throw new \Exception("Post not found in cache!");
+        }
+
+        return unserialize(file_get_contents($file));
     }
 
     public function putPost($post, $topic)
