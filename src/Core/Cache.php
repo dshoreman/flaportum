@@ -1,5 +1,7 @@
 <?php namespace Flaportum\Core;
 
+use Symfony\Component\Finder\Finder;
+
 class Cache
 {
     protected $cacheRoot;
@@ -13,6 +15,19 @@ class Cache
         $this->cacheRoot = __DIR__.'/../../cache';
 
         $this->source = $source;
+    }
+
+    public function list()
+    {
+        $caches = [];
+
+        $path = $this->getPath('root', $this->source->getCode(), $this->cacheRoot);
+
+        foreach ((new Finder)->directories()->depth(0)->in($path) as $cache) {
+            $caches[] = $cache->getFilename();
+        }
+
+        return  $caches;
     }
 
     public function create($dir)

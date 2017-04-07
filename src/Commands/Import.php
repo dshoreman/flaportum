@@ -1,6 +1,7 @@
 <?php namespace Flaportum\Commands;
 
 use Flagrow\Flarum\Api\Flarum;
+use Flaportum\Core\Cache;
 use Flaportum\Services\ServiceManager;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -34,9 +35,27 @@ class Import extends Command
 
         $this->helper = $this->getHelper('question');
 
+        $source = $this->chooseCache($input, $output);
+
         $forum = $this->chooseHost($input, $output);
 
         $tag = $this->chooseTag($input, $output, $forum->tags);
+    }
+
+    protected function chooseCache($input, $output)
+    {
+        $service = $this->helper->ask($input, $output, new ChoiceQuestion(
+            "Select the service you used for the export: ",
+            (new ServiceManager)->exportServices,
+            0
+        ));
+
+        $cache = $this->helper->ask($input, $output, new ChoiceQuestion(
+            "Now select the forum dump to import: ",
+            (new Cache(new $service))->list()
+        ));
+
+        $output->writeLn("You selected: {$cache}");
     }
 
     protected function chooseHost($input, $output)
