@@ -16,6 +16,8 @@ class Import extends Command
 {
     protected $api;
 
+    protected $config;
+
     protected $helper;
 
     protected function configure()
@@ -32,6 +34,12 @@ class Import extends Command
             '╚══════════════════════════╝',
             '',
         ]);
+
+        $this->config = (object) (
+            file_exists($config = __DIR__.'/../../config/flarum.php')
+            ? require_once $config
+            : ['api_token' => '']
+        );
 
         $this->helper = $this->getHelper('question');
 
@@ -67,7 +75,7 @@ class Import extends Command
             ));
 
             $this->api = new Flarum($host, [
-                'token' => 'Token wicwqnvRqmGNp4LBAMHWp3nKRbh19dsCbfiCgp7N; userId=1'
+                'token' => "Token {$this->config->token}; userId=1"
             ]);
 
             $forum = $this->api->forum()->request();
