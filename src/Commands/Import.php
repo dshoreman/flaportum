@@ -178,7 +178,7 @@ class Import extends Command
                 'data' => [
                     'attributes' => [
                         'username' => $username,
-                        'email' => "dummy+{$username}@octoshop.co",
+                        'email' => sprintf($this->config->email, $username),
                         'password' => Str::random(20),
                         'isActivated' => true,
                     ],

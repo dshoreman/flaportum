@@ -7,4 +7,9 @@ return [
     # character string to your `api_keys` table.
     'token' => '',
 
+    # Sets the template for user accounts that don't
+    # exist. %s is replaced by the account username.
+    # Avoid using public domains like gmail.
+    'email' => "%s@flaportum.example",
+
 ];
