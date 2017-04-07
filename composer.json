@@ -1,5 +1,11 @@
 {
+    "repositories": [{
+        "type": "vcs",
+        "url": "https://github.com/dshoreman/flarum-api-client"
+    }],
     "require": {
+        "flagrow/flarum-api-client": "dev-develop",
+        "illuminate/support": "^5.3",
         "paquettg/php-html-parser": "^1.7",
         "symfony/console": "^3.2"
     },

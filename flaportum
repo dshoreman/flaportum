@@ -4,10 +4,12 @@
 require __DIR__.'/vendor/autoload.php';
 
 use Flaportum\Commands\Export as ExportCommand;
+use Flaportum\Commands\Import as ImportCommand;
 use Symfony\Component\Console\Application;
 
 $app = new Application();
 
 $app->add(new ExportCommand());
+$app->add(new ImportCommand());
 
 $app->run();
