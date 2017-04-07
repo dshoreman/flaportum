@@ -166,6 +166,8 @@ class Import extends Command
                     $topic->content = $post->content;
 
                     $discussion = $this->createDiscussion($topic);
+                } else {
+                    $this->createPost($discussion, $post);
                 }
             }
         }
@@ -178,6 +180,25 @@ class Import extends Command
                 'attributes' => [
                     'title' => $topic->title,
                     'content' => $topic->content,
+                ],
+            ],
+        ])->request();
+    }
+
+    protected function createPost($discussion, $post)
+    {
+        return $this->api->posts()->post([
+            'data' => [
+                'attributes' => [
+                    'content' => $post->content,
+                    'time' => $post->created_at,
+                ],
+                'relationships' => [
+                    'discussion' => [
+                        'data' => [
+                            'id' => $discussion->id,
+                        ],
+                    ],
                 ],
             ],
         ])->request();
