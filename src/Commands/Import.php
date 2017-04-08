@@ -211,11 +211,7 @@ class Import extends Command
         foreach ($this->cache->getUsers() as $profile) {
             $user = $this->createUser($input, $output, $profile);
 
-            if (!$this->users->collect()->has($user->id)) {
-                $this->users->collect()->put($user->id, $user);
-            }
-
-            $this->userMap[$profile->id] = $user->id;
+            $this->userMap[$profile->id] = $user ? $user->id : null;
         }
     }
 
@@ -250,6 +246,7 @@ class Import extends Command
     protected function createUser($input, $output, $user, $increment = 0)
     {
         $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
+        $collection = $this->users->collect();
 
         try {
             $user = $this->api->users()->post([
@@ -289,17 +286,22 @@ class Import extends Command
                 if ($answer == 'n') {
                     $user = $this->createUser($input, $output, $user, $increment + 1);
                 } else {
-                    $userId = $this->users->collect()->search(function ($user, $id) use ($username) {
+                    $userId = $collection->search(function ($user, $id) use ($username) {
                         return $user->username == $username;
                     });
 
-                    $user = $this->users->collect()->get($userId);
+                    $user = $collection->get($userId);
                 }
 
                 break;
             }
         }
 
-        return $user;
+        // If we've created a new user, make sure it's in our cache
+        if ($user && !$collection->has($user->id)) {
+            $this->users->collect()->put($user->id, $user);
+        }
+
+        return $user ?? null;
     }
 }
