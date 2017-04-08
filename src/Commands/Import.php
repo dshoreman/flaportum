@@ -246,14 +246,18 @@ class Import extends Command
     protected function createUser($input, $output, $user, $increment = 0)
     {
         $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
+        $email = sprintf($this->config->email, $username);
         $collection = $this->users->collect();
 
         try {
+            $previous = $username == $user->username ? null : " (originally {$user->username})";
+            $output->writeLn(['', "Registering user {$username}{$previous} for account {$user->id}..."]);
+
             $user = $this->api->users()->post([
                 'data' => [
                     'attributes' => [
                         'username' => $username,
-                        'email' => sprintf($this->config->email, $username),
+                        'email' => $email,
                         'password' => Str::random(20),
                         'isActivated' => true,
                     ],
@@ -263,37 +267,35 @@ class Import extends Command
             // Reset the API first, or we get endpoint recursion (/api/users/users)
             $this->api->fluent();
 
-            $res = $e->getResponse();
-            $body = json_decode($res->getBody());
+            $errors = $this->handleUserCreateException($input, $output, $e);
 
-            if ($res->getStatusCode() != 422) {
-                throw $e;
+            if ($errors->unhandled) {
+                $output->writeLn("[ERROR] Failed to register username {$username}. Skipping.");
+
+                return;
             }
 
-            foreach ($body->errors as $error) {
-                if ($error->detail != 'The email has already been taken.'
-                 && $error->detail != 'The username has already been taken.') {
-                    $output->writeLn('[DEBUG] '.$error->detail);
-                    continue;
-                }
+            if ($errors->user_taken && $errors->email_taken) {
+                $output->writeLn("[INFO] User '{$username}' is already registered");
+
+                $user = $this->getCachedUser($username, $collection);
+            } elseif ($errors->user_taken || $errors->email_taken) {
+                $field = $errors->user_taken ? 'username' : 'email';
+                $other = $errors->user_taken ? 'email' : 'username';
+
+                $output->writeLn("[ERROR] The {$field} '{$$field}' is already registered, but with a different {$other}.");
 
                 $answer = $this->helper->ask($input, $output, new ChoiceQuestion(
-                    sprintf("%s What should we do? ", $error->detail),
-                    ['c' => "Continue using the existing user ({$username})", 'n' => 'Make a new, suffixed user'],
+                    "How would you like to proceed?",
+                    ['c' => "Continue using the existing user", 'n' => 'Make a new, suffixed user'],
                     'n'
                 ));
 
                 if ($answer == 'n') {
                     $user = $this->createUser($input, $output, $user, $increment + 1);
                 } else {
-                    $userId = $collection->search(function ($user, $id) use ($username) {
-                        return $user->username == $username;
-                    });
-
-                    $user = $collection->get($userId);
+                    $user = $this->getCachedUser($username, $collection);
                 }
-
-                break;
             }
         }
 
@@ -303,5 +305,43 @@ class Import extends Command
         }
 
         return $user ?? null;
+    }
+
+    protected function getCachedUser($username, \Illuminate\Support\Collection $collection)
+    {
+        $id = $collection->search(function ($user, $id) use ($username) {
+            return $user->username == $username;
+        });
+
+        return $id ? $collection->get($id) : null;
+    }
+
+    protected function handleUserCreateException($input, $output, $exception)
+    {
+        $response = $exception->getResponse();
+        $body = json_decode($response->getBody());
+        $errors = (object) [
+            'email_taken' => false,
+            'user_taken' => false,
+            'unhandled' => false,
+        ];
+
+        if ($response->getStatusCode() != 422) {
+            throw $e;
+        }
+
+        foreach ($body->errors as $error) {
+            switch ($error->detail) {
+                case 'The username has already been taken.':
+                    $errors->user_taken = true; break;
+                case 'The email has already been taken.':
+                    $errors->email_taken = true; break;
+                default:
+                    $output->writeLn("[DEBUG] {$error->detail}");
+                    $errors->unhandled = true;
+            }
+        }
+
+        return $errors;
     }
 }
