@@ -224,7 +224,7 @@ class Import extends Command
         $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
 
         try {
-            return $this->api->users()->post([
+            $user = $this->api->users()->post([
                 'data' => [
                     'attributes' => [
                         'username' => $username,
@@ -235,6 +235,9 @@ class Import extends Command
                 ],
             ])->request();
         } catch (ClientException $e) {
+            // Reset the API first, or we get endpoint recursion (/api/users/users)
+            $this->api->fluent();
+
             $res = $e->getResponse();
             $body = json_decode($res->getBody());
 
@@ -245,6 +248,7 @@ class Import extends Command
             foreach ($body->errors as $error) {
                 if ($error->detail != 'The email has already been taken.'
                  && $error->detail != 'The username has already been taken.') {
+                    $output->writeLn('[DEBUG] '.$error->detail);
                     continue;
                 }
 
@@ -255,20 +259,19 @@ class Import extends Command
                 ));
 
                 if ($answer == 'n') {
-                    // Reset the API first, or we get endpoint recursion (/api/users/users)
-                    $this->api->fluent();
-
-                    return $this->createUser($input, $output, $user, $increment + 1);
+                    $user = $this->createUser($input, $output, $user, $increment + 1);
                 } else {
                     $userId = $this->users->collect()->search(function ($user, $id) use ($username) {
                         return $user->username == $username;
                     });
 
-                    return $this->users->collect()->get($userId);
+                    $user = $this->users->collect()->get($userId);
                 }
 
                 break;
             }
         }
+
+        return $user;
     }
 }
