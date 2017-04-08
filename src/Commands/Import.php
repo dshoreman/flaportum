@@ -206,7 +206,7 @@ class Import extends Command
 
     protected function importUsers($input, $output)
     {
-        $this->users = $this->api->users()->request();
+        $this->loadExistingUsers($input, $output);
 
         foreach ($this->cache->getUsers() as $profile) {
             $user = $this->createUser($input, $output, $profile);
@@ -216,6 +216,34 @@ class Import extends Command
             }
 
             $this->userMap[$profile->id] = $user->id;
+        }
+    }
+
+    protected function loadExistingUsers($input, $output)
+    {
+        $this->users = $this->api->users()->request();
+
+        while ($links = $this->api->links) {
+            if (!array_key_exists('next', $links)) {
+                $output->writeLn("All users fetched!");
+                break;
+            }
+
+            $params = explode('&', urldecode(parse_url($links['next'], PHP_URL_QUERY)));
+
+            foreach ($params as $param) {
+                list($k, $v) = explode('=', $param);
+
+                if ($k != 'page[offset]') {
+                    continue;
+                }
+
+                $offset = (int) $v;
+
+                break;
+            }
+
+            $this->users->merge($batch = $this->api->users()->offset($offset)->request());
         }
     }
 
