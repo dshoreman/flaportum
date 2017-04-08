@@ -246,7 +246,7 @@ class Import extends Command
     protected function createUser($input, $output, $user, $increment = 0)
     {
         $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
-        $email = sprintf($this->config->email, $username);
+        $email = sprintf($this->config->email, str_replace(' ', '', $username));
         $collection = $this->users->collect();
 
         try {
@@ -263,6 +263,8 @@ class Import extends Command
                     ],
                 ],
             ])->request();
+
+            $output->writeLn("[INFO] Successfully created user {$user->username}");
         } catch (ClientException $e) {
             // Reset the API first, or we get endpoint recursion (/api/users/users)
             $this->api->fluent();
@@ -283,7 +285,7 @@ class Import extends Command
                 $field = $errors->user_taken ? 'username' : 'email';
                 $other = $errors->user_taken ? 'email' : 'username';
 
-                $output->writeLn("[ERROR] The {$field} '{$$field}' is already registered, but with a different {$other}.");
+                $output->writeLn("[ERROR] The {$field} '{$$field}' is already registered with a different {$other}.");
 
                 $answer = $this->helper->ask($input, $output, new ChoiceQuestion(
                     "How would you like to proceed?",
@@ -296,6 +298,12 @@ class Import extends Command
                 } else {
                     $user = $this->getCachedUser($username, $collection);
                 }
+            } elseif ($errors->user_invalid) {
+                $output->writeLn("[INFO] Username {$username} is invalid, attempting to fix...");
+
+                $user->username = preg_replace('/[^\pL\pM\pN_-]+/u', '-', $username);
+
+                $user = $this->createUser($input, $output, $user, $increment);
             }
         }
 
@@ -336,6 +344,8 @@ class Import extends Command
                     $errors->user_taken = true; break;
                 case 'The email has already been taken.':
                     $errors->email_taken = true; break;
+                case 'The username may only contain letters, numbers, and dashes.':
+                    $errors->user_invalid = true; break;
                 default:
                     $output->writeLn("[DEBUG] {$error->detail}");
                     $errors->unhandled = true;
