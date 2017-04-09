@@ -1,7 +1,7 @@
 <?php namespace Flaportum\Commands;
 
-use Flagrow\Flarum\Api\Flarum;
 use Flaportum\Core\Cache;
+use Flaportum\Services\Flarum\Api;
 use Flaportum\Services\ServiceManager;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Psr7;
@@ -17,6 +17,8 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 class Import extends Command
 {
     protected $api;
+
+    protected $apiHost;
 
     protected $cache;
 
@@ -83,16 +85,12 @@ class Import extends Command
     protected function chooseHost($input, $output)
     {
         while (!isset($forum)) {
-            $host = $this->helper->ask($input, $output, new Question(
+            $this->apiHost = $this->helper->ask($input, $output, new Question(
                 "Enter the URL to import into, or leave blank for localhost: ",
                 'http://localhost'
             ));
 
-            $this->api = new Flarum($host, [
-                'token' => "Token {$this->config->token}; userId=1"
-            ]);
-
-            $forum = $this->api->forum()->request();
+            $forum = $this->api()->forum()->request();
 
             $output->writeLn("We found a forum called '{$forum->title}' at that link!");
 
@@ -102,6 +100,15 @@ class Import extends Command
 
             unset($forum);
         }
+    }
+
+    protected function api($userId = 1)
+    {
+        if (!$this->api) {
+            $this->api = new Api($this->apiHost, $this->config->token);
+        }
+
+        return $this->api->instance($userId);
     }
 
     protected function chooseTag($input, $output, $tagdata)
@@ -145,7 +152,7 @@ class Import extends Command
             ''
         ));
 
-        return $this->api->tags()->post([
+        return $this->api()->tags()->post([
             'data' => [
                 'attributes' => [
                     'name' => $name,
@@ -175,7 +182,9 @@ class Import extends Command
 
     protected function createDiscussion($topic)
     {
-        return $this->api->discussions()->post([
+        $actor = $this->userMap[$topic->author];
+
+        return $this->api($actor)->discussions()->post([
             'data' => [
                 'attributes' => [
                     'title' => $topic->title,
@@ -187,7 +196,9 @@ class Import extends Command
 
     protected function createPost($discussion, $post)
     {
-        return $this->api->posts()->post([
+        $actor = $this->userMap[$post->author];
+
+        return $this->api($actor)->posts()->post([
             'data' => [
                 'attributes' => [
                     'content' => $post->content,
@@ -217,9 +228,9 @@ class Import extends Command
 
     protected function loadExistingUsers($input, $output)
     {
-        $this->users = $this->api->users()->request();
+        $this->users = $this->api()->users()->request();
 
-        while ($links = $this->api->links) {
+        while ($links = $this->api()->links) {
             if (!array_key_exists('next', $links)) {
                 $output->writeLn("All users fetched!");
                 break;
@@ -239,7 +250,7 @@ class Import extends Command
                 break;
             }
 
-            $this->users->merge($batch = $this->api->users()->offset($offset)->request());
+            $this->users->merge($batch = $this->api()->users()->offset($offset)->request());
         }
     }
 
@@ -253,7 +264,7 @@ class Import extends Command
             $previous = $username == $user->username ? null : " (originally {$user->username})";
             $output->writeLn(['', "Registering user {$username}{$previous} for account {$user->id}..."]);
 
-            $user = $this->api->users()->post([
+            $user = $this->api()->users()->post([
                 'data' => [
                     'attributes' => [
                         'username' => $username,
@@ -267,7 +278,7 @@ class Import extends Command
             $output->writeLn("[INFO] Successfully created user {$user->username}");
         } catch (ClientException $e) {
             // Reset the API first, or we get endpoint recursion (/api/users/users)
-            $this->api->fluent();
+            $this->api()->fluent();
 
             $errors = $this->handleUserCreateException($input, $output, $e);
 
