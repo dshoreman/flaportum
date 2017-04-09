@@ -169,6 +169,9 @@ class Import extends Command
     protected function importDiscussions($input, $output)
     {
         foreach ($this->cache->getTopics() as $topic) {
+            $output->writeLn("Importing topic: {$topic->title}");
+            $topic->title = $this->enforceTitleLength($input, $output, $topic->title);
+
             for ($i = 0; $i < count($topic->posts); $i++) {
                 $post = $this->cache->getPost($topic, $topic->posts[$i]);
 
@@ -181,6 +184,24 @@ class Import extends Command
                 }
             }
         }
+    }
+
+    protected function enforceTitleLength($input, $output, $title)
+    {
+        $tooLong = strlen($title) > 80;
+        $tooShort = strlen($title) < 3;
+
+        while ($tooLong || $tooShort) {
+            $rule = $tooLong ? 'more than 80' : 'less than 3';
+            $output->writeLn("[ERROR] The title may not be {$rule} characters long.");
+
+            $title = $this->helper->ask($input, $output, new Question("Enter a new discussion title: "));
+
+            $tooLong = strlen($title) > 80;
+            $tooShort = strlen($title) < 3;
+        }
+
+        return $title;
     }
 
     protected function createDiscussion($topic)
