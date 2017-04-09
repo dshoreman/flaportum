@@ -1,6 +1,7 @@
 <?php namespace Flaportum\Commands;
 
 use Flaportum\Core\Cache;
+use Flaportum\Markdown\Markdown;
 use Flaportum\Services\Flarum\Api;
 use Flaportum\Services\ServiceManager;
 use GuzzleHttp\Exception\ClientException;
@@ -50,6 +51,8 @@ class Import extends Command
             ? require_once $config
             : ['api_token' => '']
         );
+
+        $this->md = new Markdown();
 
         $this->helper = $this->getHelper('question');
 
@@ -188,7 +191,7 @@ class Import extends Command
             'data' => [
                 'attributes' => [
                     'title' => $topic->title,
-                    'content' => $topic->content,
+                    'content' => $this->md->convert($topic->content),
                 ],
             ],
         ])->request();
@@ -201,7 +204,7 @@ class Import extends Command
         return $this->api($actor)->posts()->post([
             'data' => [
                 'attributes' => [
-                    'content' => $post->content,
+                    'content' => $this->md->convert($post->content),
                     'time' => $post->created_at,
                 ],
                 'relationships' => [
