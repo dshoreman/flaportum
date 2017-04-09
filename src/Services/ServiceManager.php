@@ -1,5 +1,7 @@
 <?php namespace Flaportum\Services;
 
+use ReflectionClass;
+
 class ServiceManager
 {
     public $services = [];
@@ -41,7 +43,7 @@ class ServiceManager
                     continue;
                 }
 
-                $service = new $class;
+                $service = (new ReflectionClass($class))->newInstanceWithoutConstructor();
 
                 if (!$service instanceof ExportInterface) {
                     continue;
