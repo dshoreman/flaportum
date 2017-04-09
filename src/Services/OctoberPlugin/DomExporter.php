@@ -78,7 +78,7 @@ class DomExporter extends ExportBase implements ExportInterface
                 "[%s] Caching topic %s of %s: %s".PHP_EOL,
                 $this->cache->putTopic($topic) ? 'PASS' : 'FAIL',
                 $cur, $all,
-                html_entity_decode($topic->title, ENT_QUOTES)
+                $topic->title
             );
 
             $this->loadPosts($posts, $topic);
@@ -94,7 +94,7 @@ class DomExporter extends ExportBase implements ExportInterface
         $link = $name->getAttribute('href');
 
         $topic = new Topic;
-        $topic->title = $name->innerHtml();
+        $topic->title = html_entity_decode($name->innerHtml(), ENT_QUOTES);
         $topic->slug = substr($link, strrpos($link, '/') + 1);
         $topic->author = $this->getUser($data->find('h5 small a')[0])->id;
 
