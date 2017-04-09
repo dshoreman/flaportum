@@ -192,6 +192,7 @@ class Import extends Command
                 'attributes' => [
                     'title' => $topic->title,
                     'content' => $this->md->convert($topic->content),
+                    'time' => $topic->created_at,
                 ],
             ],
         ])->request();
