@@ -118,7 +118,7 @@ class Import extends Command
     {
         $tags = [
             $createStr = 'None (let me create one)'
-        ] + Arr::pluck($tagdata, 'attributes.slug', 'id');
+        ] + Arr::pluck($this->filterPrimaryTags($tagdata), 'attributes.slug', 'id');
 
         $tag = $this->helper->ask($input, $output, new ChoiceQuestion(
             "Select the tag you'd like to save discussions into: ",
@@ -141,6 +141,19 @@ class Import extends Command
         $output->writeLn(["{$action} tag: {$tag->name}", PHP_EOL]);
 
         return $tag;
+    }
+
+    protected function filterPrimaryTags($tags)
+    {
+        $primaries = [];
+
+        foreach ($tags as $tag) {
+            if (!$tag->isChild && $tag->position !== null) {
+                $primaries[$tag->id] = $tag;
+            }
+        }
+
+        return $primaries;
     }
 
     protected function createTag($input, $output)
