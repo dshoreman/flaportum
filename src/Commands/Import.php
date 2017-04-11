@@ -143,7 +143,7 @@ class Import extends Command
         return $tag;
     }
 
-    protected function buildTagList()
+    protected function buildTagList($includeChildren = true)
     {
         $list = ['None (let me create one)'];
 
@@ -157,6 +157,10 @@ class Import extends Command
 
         foreach ($parents as $tag) {
             $list[$tag->id] = $tag->slug;
+
+            if (!$includeChildren) {
+                continue;
+            }
 
             foreach ($children->where('relationships.parent.id', $tag->id) as $child) {
                 $list[$child->id] = "{$tag->slug}/{$child->slug}";
@@ -178,12 +182,25 @@ class Import extends Command
             ''
         ));
 
+        $parent = $this->helper->ask($input, $output, new ChoiceQuestion(
+            "Finally, set the parent tag: ",
+            $tags = $this->buildTagList(false),
+            0
+        ));
+
         return $this->api()->tags()->post([
             'data' => [
                 'attributes' => [
                     'name' => $name,
                     'slug' => Str::slug($name),
                     'description' => $desc,
+                ],
+                'relationships' => [
+                    'parent' => [
+                        'data' => [
+                            'id' => array_search($parent, $tags),
+                        ],
+                    ],
                 ],
             ],
         ])->request();
@@ -230,6 +247,11 @@ class Import extends Command
     protected function createDiscussion($topic, $tag)
     {
         $actor = $this->userMap[$topic->author];
+        $tags = [['id' => $tag->id]];
+
+        if ($tag->isChild) {
+            $tags[] = ['id' => $tag->parent->id];
+        }
 
         return $this->api($actor)->discussions()->post([
             'data' => [
@@ -240,9 +262,7 @@ class Import extends Command
                 ],
                 'relationships' => [
                     'tags' => [
-                        'data' => [
-                            'id' => $tag,
-                        ],
+                        'data' => $tags,
                     ],
                 ],
             ],
