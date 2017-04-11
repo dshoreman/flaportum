@@ -60,7 +60,9 @@ class Import extends Command
 
         $forum = $this->chooseHost($input, $output);
 
-        $tag = $this->chooseTag($input, $output, $forum->tags);
+        $this->tagIndex = $this->api()->tags()->request()->collect();
+
+        $tag = $this->chooseTag($input, $output);
 
         $this->importUsers($input, $output);
 
@@ -114,11 +116,9 @@ class Import extends Command
         return $this->api->instance($userId);
     }
 
-    protected function chooseTag($input, $output, $tagdata)
+    protected function chooseTag($input, $output)
     {
-        $tags = [
-            $createStr = 'None (let me create one)'
-        ] + Arr::pluck($this->filterPrimaryTags($tagdata), 'attributes.slug', 'id');
+        $tags = $this->buildTagList();
 
         $tag = $this->helper->ask($input, $output, new ChoiceQuestion(
             "Select the tag you'd like to save discussions into: ",
@@ -131,7 +131,7 @@ class Import extends Command
         if ($tag = array_search($tag, $tags)) {
             $action = 'Selected';
 
-            $tag = $tagdata[$tag];
+            $tag = $this->tagIndex[$tag];
         } else {
             $action = 'Created';
 
@@ -143,17 +143,27 @@ class Import extends Command
         return $tag;
     }
 
-    protected function filterPrimaryTags($tags)
+    protected function buildTagList()
     {
-        $primaries = [];
+        $list = ['None (let me create one)'];
 
-        foreach ($tags as $tag) {
-            if (!$tag->isChild && $tag->position !== null) {
-                $primaries[$tag->id] = $tag;
+        $primary = $this->tagIndex->filter(function($tag, $id) {
+            return $tag->position !== null;
+        })->sortBy('attributes.position');
+
+        list($parents, $children) = $primary->partition(function ($tag) {
+            return $tag->parent === null;
+        });
+
+        foreach ($parents as $tag) {
+            $list[$tag->id] = $tag->slug;
+
+            foreach ($children->where('relationships.parent.id', $tag->id) as $child) {
+                $list[$child->id] = "{$tag->slug}/{$child->slug}";
             }
         }
 
-        return $primaries;
+        return $list;
     }
 
     protected function createTag($input, $output)
