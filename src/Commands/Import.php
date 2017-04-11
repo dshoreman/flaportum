@@ -64,7 +64,7 @@ class Import extends Command
 
         $this->importUsers($input, $output);
 
-        $this->importDiscussions($input, $output);
+        $this->importDiscussions($input, $output, $tag);
     }
 
     protected function chooseCache($input, $output)
@@ -179,7 +179,7 @@ class Import extends Command
         ])->request();
     }
 
-    protected function importDiscussions($input, $output)
+    protected function importDiscussions($input, $output, $tag)
     {
         foreach ($this->cache->getTopics() as $topic) {
             $output->writeLn("Importing topic: {$topic->title}");
@@ -191,7 +191,7 @@ class Import extends Command
                 if ($i === 0) {
                     $topic->content = $post->content;
 
-                    $discussion = $this->createDiscussion($topic);
+                    $discussion = $this->createDiscussion($topic, $tag);
                 } else {
                     $this->createPost($discussion, $post);
                 }
@@ -217,7 +217,7 @@ class Import extends Command
         return $title;
     }
 
-    protected function createDiscussion($topic)
+    protected function createDiscussion($topic, $tag)
     {
         $actor = $this->userMap[$topic->author];
 
@@ -227,6 +227,13 @@ class Import extends Command
                     'title' => $topic->title,
                     'content' => $this->md->convert($topic->content),
                     'time' => $topic->created_at,
+                ],
+                'relationships' => [
+                    'tags' => [
+                        'data' => [
+                            'id' => $tag,
+                        ],
+                    ],
                 ],
             ],
         ])->request();
