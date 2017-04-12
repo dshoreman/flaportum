@@ -273,12 +273,18 @@ class Import extends Command
     {
         $actor = $this->userMap[$post->author];
 
+        $data = [
+            'content' => $this->md->convert($post->content),
+            'time' => $post->created_at,
+        ];
+
+        if ($post->updated_at) {
+            $data['edit_time'] = $post->updated_at;
+        }
+
         return $this->api($actor)->posts()->post([
             'data' => [
-                'attributes' => [
-                    'content' => $this->md->convert($post->content),
-                    'time' => $post->created_at,
-                ],
+                'attributes' => $data,
                 'relationships' => [
                     'discussion' => [
                         'data' => [

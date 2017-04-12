@@ -110,9 +110,9 @@ class DomExporter extends ExportBase implements ExportInterface
             $post = new Post;
             $post->id = $result->getAttribute('data-post-id');
             $post->author = $this->getUser($result->find('.content > a.author')[0])->id;
-            $post->content = $result->find('.content > .text')[0]->innerHtml();
             $post->created_at = $this->getCreateTimestamp($result);
             $post->updated_at = $this->getEditTimestamp($result);
+            $post->content = $result->find('.content > .text')[0]->innerHtml();
 
             echo sprintf(
                 "[%s] Caching post %s of %s".PHP_EOL,
@@ -130,16 +130,20 @@ class DomExporter extends ExportBase implements ExportInterface
         return $post->find('.content .metadata time')[0]->getAttribute('datetime');
     }
 
-    protected function getEditTimestamp($post)
+    protected function getEditTimestamp(&$post)
     {
         $mutedLines = $post->find('.content > .text small.text-muted');
 
-        foreach ($mutedLines as $line) {
+        foreach ($mutedLines as $i => $line) {
             if (trim($line->text) != 'Last updated') {
                 continue;
             }
 
-            return $line->find('time')[0]->getAttribute('datetime');
+            $time = $line->find('time')[0]->getAttribute('datetime');
+
+            $mutedLines[$i]->delete();
+
+            return $time;
         }
     }
 
