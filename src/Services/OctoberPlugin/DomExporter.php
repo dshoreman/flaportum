@@ -161,7 +161,7 @@ class DomExporter extends ExportBase implements ExportInterface
         $user = new User;
         $user->id = $slug;
         $user->username = $link->innerHtml();
-        $user->created_at = trim(str_replace('Member since: ', '', $info->find('p')[0]));
+        $user->created_at = trim(str_replace('Member since: ', '', $info->find('p')[0]->text));
 
         echo sprintf(
             "[%s] Caching new user: %s".PHP_EOL,

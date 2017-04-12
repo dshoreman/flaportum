@@ -339,6 +339,7 @@ class Import extends Command
     {
         $username = $increment ? sprintf("%s-%s", $user->username, $increment) : $user->username;
         $email = sprintf($this->config->email, str_replace(' ', '', $username));
+        $join_time = $user->created_at;
         $collection = $this->users->collect();
 
         try {
@@ -349,8 +350,9 @@ class Import extends Command
                 'data' => [
                     'attributes' => [
                         'username' => $username,
-                        'email' => $email,
                         'password' => Str::random(20),
+                        'email' => $email,
+                        'join_time' => $join_time,
                         'isActivated' => true,
                     ],
                 ],

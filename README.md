@@ -36,3 +36,30 @@ Open `vendor/flarum/core/src/Core/Command/PostReplyHandler.php`, find [this bloc
 ```
 
 It's probably a really bad idea to allow anyone to set the post time normally, so you should **revert this change** after importing.
+
+
+## User registration dates
+
+Similar to post times, Flarum currently doesn't enable setting the registration date for users via the API.
+
+To preserve join dates, you'll need to edit `vendor/flarum/core/src/Core/Command/RegisterUserCommand.php`.
+
+First, add `use DateTime;` at the top, then update the `handle` method like so:
+
+```diff
+             $password = $password ?: str_random(20);
+         }
+
+         $user = User::register($username, $email, $password);
++
++        if ($actor->isAdmin() && $date = array_get($data, 'attributes.join_time')) {
++            $user->join_time = new DateTime($date);
++        }
+
+         // If a valid authentication token was provided, then we will assign
+         // the attributes associated with it to the user's account. If this
+         // includes an email address, then we will activate the user's account
+         // from the get-go.
+         if (isset($token)) {
+             foreach ($token->payload as $k => $v) {
+```
