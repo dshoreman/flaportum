@@ -10,6 +10,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Question\ChoiceQuestion;
@@ -35,16 +36,20 @@ class Import extends Command
     {
         $this->setName('import');
         $this->setDescription('Imports data from a supported forum');
+
+        $this->addOption('suppress-heading', null, InputOption::VALUE_NONE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeLn([
-            '╔══════════════════════════╗',
-            '║ Flaportum Forum Importer ║',
-            '╚══════════════════════════╝',
-            '',
-        ]);
+        if (!$input->getOption('suppress-heading')) {
+            $output->writeLn([
+                '╔══════════════════════════╗',
+                '║ Flaportum Forum Importer ║',
+                '╚══════════════════════════╝',
+                '',
+            ]);
+        }
 
         $this->config = (object) (
             file_exists($config = __DIR__.'/../../config/flarum.php')

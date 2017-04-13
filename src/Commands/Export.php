@@ -3,6 +3,7 @@
 use Flaportum\Services\ServiceManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Question\ChoiceQuestion;
@@ -13,16 +14,20 @@ class Export extends Command
     {
         $this->setName('export');
         $this->setDescription('Exports data from a supported forum');
+
+        $this->addOption('suppress-heading', null, InputOption::VALUE_NONE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $out)
     {
-        $out->writeLn([
-            '╔══════════════════════════╗',
-            '║ Flaportum Forum Exporter ║',
-            '╚══════════════════════════╝',
-            '',
-        ]);
+        if (!$input->getOption('suppress-heading')) {
+            $out->writeLn([
+                '╔══════════════════════════╗',
+                '║ Flaportum Forum Exporter ║',
+                '╚══════════════════════════╝',
+                '',
+            ]);
+        }
 
         $helper = $this->getHelper('question');
 
