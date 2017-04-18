@@ -305,11 +305,17 @@ class Import extends Command
     {
         $this->loadExistingUsers($input, $output);
 
+        $report = Report::for('users');
+
         foreach ($this->cache->getUsers() as $profile) {
             $user = $this->createUser($input, $output, $profile);
 
             $this->userMap[$profile->id] = $user ? $user->id : null;
+
+            $report->append($profile->username, $profile->id, $user->id);
         }
+
+        $report->write();
     }
 
     protected function loadExistingUsers($input, $output)
