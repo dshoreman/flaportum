@@ -87,7 +87,7 @@ class Cache
         }
     }
 
-    protected function getPath($cache = 'root', $item = null, $root = false)
+    public function getPath($cache = 'root', $item = null, $root = false)
     {
         $path = $root ? $this->cacheRoot : $this->cachePath;
 
@@ -95,7 +95,11 @@ class Cache
             case 'topics': $path .= '/topics'; break;
             case 'posts': $path .= '/posts'; break;
             case 'users': $path .= '/users'; break;
-            case 'root': $path .= '/'.$this->source->getCode(); break;
+            case 'root':
+                if ($this->source !== null) {
+                    $path .= '/'.$this->source->getCode();
+                }
+                break;
         }
 
         if ($item) {
