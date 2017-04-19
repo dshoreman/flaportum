@@ -1,6 +1,7 @@
 <?php namespace Flaportum\Commands;
 
 use Flaportum\Core\Cache;
+use Flaportum\Core\Report;
 use Flaportum\Markdown\Markdown;
 use Flaportum\Services\Flarum\Api;
 use Flaportum\Services\ServiceManager;
