@@ -2,7 +2,25 @@
 
 Flaportum is a commandline application to migrate existing forums to Flarum.
 
-It isn't currently of much use, unless you happen to be an author of an OctoberCMS plugin and want to migrate your support forum.
+This project is very much in the Proof of Concept stage. It needs refactoring, and it currently only supports exporting from plugin support forums hosted on the OctoberCMS website.
+
+
+## Usage
+
+Flaportum comes with three main commands in its arsenal:
+
+* `php flaportum export` will save users and discussions from a supported forum
+* `php flaportum import` lets you select a previously-exported forum to migrate into a Flarum install
+* `php flaportum run` goes through the whole process for a complete migration in one command
+
+In addition to those, you can also run `php flaportum cache:clear` to nuke all exported forum data.
+
+
+## Creating tags
+
+A handful of pull requests were merged into [flarum/flarum-ext-tags](https://github.com/flarum/flarum-ext-tags) to fix some bugs and enable easier creation of tags.
+
+Until they appear in a new release (current version at time of writing is **0.1.0-beta.7**) you'll need to manually clone master in your `vendor/flarum/` directory.
 
 
 ## Setting post timestamps
