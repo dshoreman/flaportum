@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__.'/vendor/autoload.php';
+
+use Flaportum\Commands\Cache\Clear as ClearCommand;
+use Flaportum\Commands\Export as ExportCommand;
+use Flaportum\Commands\Import as ImportCommand;
+use Flaportum\Commands\KitchenSink as RunCommand;
+use Symfony\Component\Console\Application;
+
+$app = new Application();
+
+$app->add(new RunCommand());
+$app->add(new ClearCommand());
+$app->add(new ExportCommand());
+$app->add(new ImportCommand());
+
+$app->run();

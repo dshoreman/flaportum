@@ -1,0 +1,20 @@
+{
+    "repositories": [{
+        "type": "vcs",
+        "url": "https://github.com/dshoreman/flarum-api-client"
+    }],
+    "require": {
+        "flagrow/flarum-api-client": "dev-develop",
+        "illuminate/support": "^5.3",
+        "league/html-to-markdown": "^4.4",
+        "paquettg/php-html-parser": "^1.7",
+        "symfony/console": "^3.2",
+        "symfony/filesystem": "^3.2",
+        "symfony/finder": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flaportum\\": "src/"
+        }
+    }
+}

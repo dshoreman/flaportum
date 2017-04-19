@@ -1,0 +1,5 @@
+cache/*
+!cache/.gitkeep
+config/flarum.php
+testinstall/
+vendor/
